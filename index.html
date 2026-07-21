@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Multi-Messenger Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ═══════════ LOCK SCREEN ═══════════ -->
+    <div class="lock-screen hidden" id="lockScreen">
+        <div class="lock-brand">
+            <div class="lock-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <div class="lock-title">Multi-Messenger Pro</div>
+            <div class="lock-subtitle">Enter your password to unlock</div>
+        </div>
+        <form class="lock-form" id="lockForm" onsubmit="return false;">
+            <div class="lock-input-wrapper">
+                <input type="password" class="lock-input" id="lockPasswordInput" placeholder="Password" autocomplete="off" autofocus>
+                <button type="button" class="lock-toggle-pw" id="lockTogglePw" tabindex="-1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="lock-error" id="lockError"></div>
+            <button type="submit" class="lock-submit" id="lockSubmitBtn" onclick="handleUnlock()">Unlock</button>
+            <div class="lock-attempts" id="lockAttempts"></div>
+        </form>
+    </div>
+
+    <!-- ═══════════ APP CONTAINER ═══════════ -->
+    <div class="app-container" id="appContainer">
+        <!-- ─── Title Bar ─── -->
+        <div class="titlebar" id="titlebar">
+            <div class="titlebar-left">
+                <svg class="titlebar-icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span class="titlebar-title">Multi-Messenger Pro</span>
+            </div>
+            <div class="titlebar-controls">
+                <button class="titlebar-btn" id="btnMinimize" title="Minimize">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="titlebar-btn" id="btnMaximize" title="Maximize">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
+                </button>
+                <button class="titlebar-btn close" id="btnClose" title="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ─── Body ─── -->
+        <div class="app-body">
+            <!-- ─── Sidebar ─── -->
+            <nav class="sidebar" id="sidebar">
+                <!-- Messenger section (dynamic) -->
+                <div class="sidebar-section messenger-list" id="messengerList"></div>
+
+                <div class="sidebar-divider"></div>
+
+                <!-- Add button -->
+                <button class="sidebar-add-btn" id="addAppBtn" data-tooltip="Add Service" onclick="openAddModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+
+                <div class="sidebar-divider"></div>
+
+                <!-- Utility nav -->
+                <div class="sidebar-bottom" id="sidebarBottom">
+                    <div class="sidebar-item" id="navBrowser">
+                        <button class="sidebar-item-btn" data-tooltip="Browser" onclick="switchPanel('browser')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sidebar-item" id="navAccounts">
+                        <button class="sidebar-item-btn" data-tooltip="Accounts" onclick="switchPanel('accounts')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sidebar-item" id="navSettings">
+                        <button class="sidebar-item-btn" data-tooltip="Settings" onclick="switchPanel('settings')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- ─── Content Area ─── -->
+            <div class="content-area" id="contentArea">
+
+                <!-- Messenger views container -->
+                <div class="messenger-panel" id="messengerPanel">
+                    <div class="empty-state" id="messengerEmpty">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <h3>No messengers added</h3>
+                        <p>Click the + button in the sidebar to add WhatsApp, Telegram, Messenger, or any other service.</p>
+                    </div>
+                </div>
+
+                <!-- Browser Panel -->
+                <div class="browser-panel" id="browserPanel">
+                    <div class="browser-tabs" id="browserTabs">
+                        <button class="browser-new-tab" id="browserNewTab" title="New Tab" onclick="browserNewTab()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </button>
+                    </div>
+                    <div class="browser-navbar" id="browserNavbar">
+                        <button class="browser-nav-btn" id="browserBack" title="Back" onclick="browserGoBack()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <button class="browser-nav-btn" id="browserForward" title="Forward" onclick="browserGoForward()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                        <button class="browser-nav-btn" id="browserReload" title="Reload" onclick="browserReload()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        </button>
+                        <input type="text" class="browser-url-bar" id="browserUrlBar" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserNavigate()">
+                        <button class="browser-nav-btn" id="browserHome" title="Home" onclick="browserGoHome()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        </button>
+                        <button class="browser-nav-btn" id="browserBookmark" title="Bookmark this page" onclick="browserToggleBookmark()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        </button>
+                        <button class="browser-nav-btn" id="browserExternal" title="Open in external browser" onclick="browserOpenExternal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="browser-content" id="browserContent">
+                        <!-- New tab pages and webviews go here -->
+                    </div>
+                </div>
+
+                <!-- Settings Panel -->
+                <div class="settings-panel" id="settingsPanel">
+                    <div class="settings-header">
+                        <h2>Settings</h2>
+                    </div>
+                    <div class="settings-body">
+                        <nav class="settings-nav" id="settingsNav">
+                            <button class="settings-nav-item active" onclick="switchSettingsTab('general')" data-tab="general">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                General
+                            </button>
+                            <button class="settings-nav-item" onclick="switchSettingsTab('appearance')" data-tab="appearance">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                                Appearance
+                            </button>
+                            <button class="settings-nav-item" onclick="switchSettingsTab('notifications')" data-tab="notifications">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                Notifications
+                            </button>
+                            <button class="settings-nav-item" onclick="switchSettingsTab('security')" data-tab="security">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                Security
+                            </button>
+                            <button class="settings-nav-item" onclick="switchSettingsTab('about')" data-tab="about">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                About
+                            </button>
+                        </nav>
+                        <div class="settings-content" id="settingsContent">
+                            <!-- General -->
+                            <div class="settings-section active" id="settingsGeneral">
+                                <div class="settings-section-title">General</div>
+                                <div class="settings-card">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Start with Windows</span>
+                                            <small>Automatically launch on system startup</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingStartup" onchange="updateSetting('startWithWindows', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Minimize to tray on close</span>
+                                            <small>Keep running in the background when window is closed</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingTray" onchange="updateSetting('minimizeToTray', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Language</span>
+                                            <small>Application display language</small>
+                                        </div>
+                                        <select class="settings-select" id="settingLanguage" onchange="updateSetting('language', this.value)">
+                                            <option value="en">English</option>
+                                            <option value="fr">Français</option>
+                                            <option value="ar">العربية</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Appearance -->
+                            <div class="settings-section" id="settingsAppearance">
+                                <div class="settings-section-title">Appearance</div>
+                                <div class="settings-card">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Theme</span>
+                                            <small>Choose between light, dark, or system theme</small>
+                                        </div>
+                                        <select class="settings-select" id="settingTheme" onchange="updateSetting('theme', this.value); applyTheme(this.value);">
+                                            <option value="dark">Dark</option>
+                                            <option value="light">Light</option>
+                                            <option value="system">System</option>
+                                        </select>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Accent Color</span>
+                                            <small>Choose the primary accent color</small>
+                                        </div>
+                                        <div class="accent-picker" id="accentPicker">
+                                            <div class="accent-swatch" style="background:#6366f1" data-color="#6366f1" onclick="setAccentColor('#6366f1')"></div>
+                                            <div class="accent-swatch" style="background:#8b5cf6" data-color="#8b5cf6" onclick="setAccentColor('#8b5cf6')"></div>
+                                            <div class="accent-swatch" style="background:#3b82f6" data-color="#3b82f6" onclick="setAccentColor('#3b82f6')"></div>
+                                            <div class="accent-swatch" style="background:#06b6d4" data-color="#06b6d4" onclick="setAccentColor('#06b6d4')"></div>
+                                            <div class="accent-swatch" style="background:#22c55e" data-color="#22c55e" onclick="setAccentColor('#22c55e')"></div>
+                                            <div class="accent-swatch" style="background:#f59e0b" data-color="#f59e0b" onclick="setAccentColor('#f59e0b')"></div>
+                                            <div class="accent-swatch" style="background:#ef4444" data-color="#ef4444" onclick="setAccentColor('#ef4444')"></div>
+                                            <div class="accent-swatch" style="background:#ec4899" data-color="#ec4899" onclick="setAccentColor('#ec4899')"></div>
+                                        </div>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Compact Mode</span>
+                                            <small>Reduce spacing for a denser layout</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingCompact" onchange="updateSetting('compactMode', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="settings-section" id="settingsNotifications">
+                                <div class="settings-section-title">Notifications</div>
+                                <div class="settings-card">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Show notification badges</span>
+                                            <small>Display unread count on sidebar icons</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingBadges" onchange="updateSetting('showNotificationBadges', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Desktop notifications</span>
+                                            <small>Show system notifications for new messages</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingDesktopNotif" onchange="updateSetting('enableDesktopNotifications', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Notification sound</span>
+                                            <small>Play a sound for notifications</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingSound" onchange="updateSetting('notificationSound', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security -->
+                            <div class="settings-section" id="settingsSecurity">
+                                <div class="settings-section-title">Security</div>
+                                <div class="settings-card">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>App Password Lock</span>
+                                            <small>Require a password to access the application</small>
+                                        </div>
+                                        <button class="settings-btn primary" id="passwordToggleBtn" onclick="togglePasswordProtection()">Enable</button>
+                                    </div>
+                                    <div class="settings-row" id="changePasswordRow" style="display:none">
+                                        <div class="settings-row-label">
+                                            <span>Change Password</span>
+                                            <small>Update your app lock password</small>
+                                        </div>
+                                        <button class="settings-btn" onclick="showChangePasswordModal()">Change</button>
+                                    </div>
+                                    <div class="settings-row" id="autoLockRow" style="display:none">
+                                        <div class="settings-row-label">
+                                            <span>Auto-lock after inactivity</span>
+                                            <small>Lock the app when inactive</small>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="settingAutoLock" onchange="updateSetting('autoLockEnabled', this.checked)">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="settings-row" id="autoLockTimeRow" style="display:none">
+                                        <div class="settings-row-label">
+                                            <span>Auto-lock time</span>
+                                            <small>Minutes of inactivity before locking</small>
+                                        </div>
+                                        <select class="settings-select" id="settingAutoLockTime" onchange="updateSetting('autoLockMinutes', parseInt(this.value))">
+                                            <option value="1">1 minute</option>
+                                            <option value="5">5 minutes</option>
+                                            <option value="15">15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="settings-card" style="margin-top: 12px;">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Clear browsing data</span>
+                                            <small>Remove browser history, bookmarks, and cache</small>
+                                        </div>
+                                        <button class="settings-btn danger" onclick="clearBrowsingData()">Clear Data</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- About -->
+                            <div class="settings-section" id="settingsAbout">
+                                <div class="about-logo">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="about-name">Multi-Messenger Pro</div>
+                                <div class="about-version" id="aboutVersion">Version 2.0.0</div>
+                                <div class="settings-card">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Electron</span>
+                                        </div>
+                                        <span id="aboutElectron" style="font-size:13px;color:var(--text-secondary)">—</span>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Chromium</span>
+                                        </div>
+                                        <span id="aboutChrome" style="font-size:13px;color:var(--text-secondary)">—</span>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Node.js</span>
+                                        </div>
+                                        <span id="aboutNode" style="font-size:13px;color:var(--text-secondary)">—</span>
+                                    </div>
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Platform</span>
+                                        </div>
+                                        <span id="aboutPlatform" style="font-size:13px;color:var(--text-secondary)">—</span>
+                                </div>
+                                <div class="settings-card" id="aboutUpdateCard" style="margin-top:12px;">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span id="aboutUpdateTitle">Software Updates</span>
+                                            <small id="aboutUpdateSubtitle">Keep your application updated for security and new features</small>
+                                        </div>
+                                        <button class="settings-btn primary" id="btnCheckUpdates" onclick="handleCheckForUpdates()">Check for Updates</button>
+                                    </div>
+                                    <div id="aboutUpdateDetails" style="display:none;padding:12px 20px;border-top:1px solid var(--border-subtle);">
+                                        <div id="aboutUpdateStatusText" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;"></div>
+                                        <div class="update-progress-bar-wrap" id="aboutProgressWrap" style="display:none;margin-bottom:8px;">
+                                            <div class="update-progress-bar" id="aboutProgressBar" style="width:0%"></div>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-tertiary);" id="aboutProgressMetaWrap">
+                                            <span id="aboutProgressMeta"></span>
+                                            <span id="aboutProgressSpeed"></span>
+                                        </div>
+                                        <div style="display:flex;gap:10px;margin-top:10px;" id="aboutUpdateActions"></div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:10px;margin-top:14px;">
+                                    <button class="settings-btn danger" onclick="confirmResetSettings()">Reset All Settings</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accounts Panel -->
+                <div class="accounts-panel" id="accountsPanel">
+                    <div class="accounts-header">
+                        <h2>Accounts</h2>
+                        <button class="settings-btn primary" onclick="openAddModal()">
+                            <span style="display:flex;align-items:center;gap:6px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Add Account
+                            </span>
+                        </button>
+                    </div>
+                    <div class="accounts-body" id="accountsBody">
+                        <!-- Dynamic account cards -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ ADD SERVICE MODAL ═══════════ -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-box">
+            <h3>Add Messaging Service</h3>
+            <div class="messenger-quick-list" id="quickAddList">
+                <!-- Populated by JS -->
+            </div>
+            <div class="modal-or">or add custom</div>
+            <div class="modal-field">
+                <label>Service Name</label>
+                <input type="text" class="modal-input" id="customAppName" placeholder="e.g. WhatsApp Business">
+            </div>
+            <div class="modal-field">
+                <label>URL</label>
+                <input type="text" class="modal-input" id="customAppUrl" placeholder="e.g. https://web.whatsapp.com">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeAddModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="saveCustomApp()">Add Service</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ CONFIRM DIALOG ═══════════ -->
+    <div class="modal-overlay confirm-dialog" id="confirmDialog">
+        <div class="modal-box">
+            <div class="confirm-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </div>
+            <h3 id="confirmTitle">Are you sure?</h3>
+            <p id="confirmMessage">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="confirmCancel" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="modal-btn primary" id="confirmAction" onclick="closeConfirmDialog()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ PASSWORD SETUP MODAL ═══════════ -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-box">
+            <h3 id="passwordModalTitle">Set App Password</h3>
+            <div class="modal-field" id="pwCurrentField" style="display:none">
+                <label>Current Password</label>
+                <input type="password" class="modal-input" id="pwCurrent" placeholder="Enter current password">
+            </div>
+            <div class="modal-field">
+                <label id="pwNewLabel">New Password</label>
+                <input type="password" class="modal-input" id="pwNew" placeholder="Enter password (min 4 characters)">
+            </div>
+            <div class="modal-field">
+                <label>Confirm Password</label>
+                <input type="password" class="modal-input" id="pwConfirm" placeholder="Confirm password">
+            </div>
+            <div class="lock-error" id="pwError"></div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closePasswordModal()">Cancel</button>
+                <button class="modal-btn primary" id="pwSubmitBtn" onclick="handlePasswordSubmit()">Set Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ REMOVE PASSWORD MODAL ═══════════ -->
+    <div class="modal-overlay" id="removePasswordModal">
+        <div class="modal-box">
+            <h3>Remove App Password</h3>
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px;">Enter your current password to remove the lock.</p>
+            <div class="modal-field">
+                <label>Current Password</label>
+                <input type="password" class="modal-input" id="rpwCurrent" placeholder="Enter current password">
+            </div>
+            <div class="lock-error" id="rpwError"></div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeRemovePasswordModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="handleRemovePassword()">Remove Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ RENAME MODAL ═══════════ -->
+    <div class="modal-overlay" id="renameModal">
+        <div class="modal-box">
+            <h3>Rename Account</h3>
+            <div class="modal-field">
+                <label>New Name</label>
+                <input type="text" class="modal-input" id="renameInput" placeholder="Enter new name">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeRenameModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="handleRename()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ UPDATE AVAILABLE MODAL ═══════════ -->
+    <div class="modal-overlay" id="updateModal">
+        <div class="modal-box" style="width:440px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div style="width:44px;height:44px;border-radius:var(--radius-md);background:var(--accent-muted);display:flex;align-items:center;justify-content:center;color:var(--accent);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:2px;" id="updateModalTitle">New Update Available</h3>
+                    <p style="font-size:13px;color:var(--text-tertiary);" id="updateModalSubtitle">A new version of Multi-Messenger Pro is available.</p>
+                </div>
+            </div>
+
+            <div class="settings-card" style="margin-bottom:16px;padding:12px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;">
+                    <span style="color:var(--text-secondary);">Current version:</span>
+                    <span style="font-weight:600;color:var(--text-primary);" id="updateCurrentVer">2.0.0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+                    <span style="color:var(--text-secondary);">New version:</span>
+                    <span style="font-weight:700;color:var(--accent);" id="updateNewVer">2.1.0</span>
+                </div>
+            </div>
+
+            <div class="update-progress-bar-wrap" id="modalProgressWrap" style="display:none;margin-bottom:10px;">
+                <div class="update-progress-bar" id="modalProgressBar" style="width:0%"></div>
+            </div>
+            <div style="display:none;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-tertiary);margin-bottom:16px;" id="modalProgressMetaWrap">
+                <span id="modalProgressMeta">Downloading...</span>
+                <span id="modalProgressSpeed"></span>
+            </div>
+
+            <div class="modal-actions" id="updateModalActions">
+                <button class="modal-btn secondary" id="btnUpdateLater" onclick="closeUpdateModal()">Later</button>
+                <button class="modal-btn primary" id="btnUpdateNow" onclick="handleStartDownload()">Update Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ TOAST ═══════════ -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

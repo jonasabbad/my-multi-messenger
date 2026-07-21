@@ -1,0 +1,73 @@
+{
+  "name": "multi-messenger-pro",
+  "version": "2.0.0",
+  "description": "All-in-one Multi-Messenger Desktop Application",
+  "author": "Youness",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonasabbad/my-multi-messenger.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.youness.messenger",
+    "productName": "MultiMessengerPro",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "jonasabbad",
+        "repo": "my-multi-messenger"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "style.css",
+      "icon.ico"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Multi-Messenger Pro",
+      "uninstallDisplayName": "Multi-Messenger Pro",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
