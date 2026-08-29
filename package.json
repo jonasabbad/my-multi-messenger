@@ -1,6 +1,6 @@
 {
   "name": "multi-messenger-pro",
-  "version": "2.0.0",
+  "version": "2.3.0",
   "description": "All-in-one Multi-Messenger Desktop Application",
   "author": "Youness",
   "repository": {
@@ -51,6 +51,7 @@
       "icon": "icon.ico"
     },
     "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

@@ -3,6 +3,14 @@ const path = require('path');
 const crypto = require('crypto');
 const Store = require('electron-store');
 
+// ─── Brave / Chrome environment ───────────────────────────────────────────────
+// Real Brave sends a Chrome-identical UA (no "Brave" token). Setting the fallback
+// here strips Electron's own UA token from every session/webview that doesn't
+// explicitly override it, so sites (Instagram especially) stop serving the
+// degraded, self-reloading page they hand to unknown user agents.
+const BRAVE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+app.userAgentFallback = BRAVE_UA;
+
 // ─── Electron Store ────────────────────────────────────────────────────────────
 const store = new Store({
   name: 'multi-messenger-config',

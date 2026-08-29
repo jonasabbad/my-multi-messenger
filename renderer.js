@@ -2,7 +2,21 @@
    Multi-Messenger Pro — Renderer
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+// Brave ships a Chrome-identical UA by design (no "Brave" token) — this mirrors
+// current Brave/Chrome on Windows and is applied to every webview below.
+const BRAVE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+// Back-compat alias (older code referenced `UA`).
+const UA = BRAVE_UA;
+
+// Injected into every webview so Brave-detection (navigator.brave.isBrave())
+// resolves true, matching a real Brave environment.
+function applyBraveEnv(wv) {
+  const shim =
+    "try{if(!('brave' in navigator)){Object.defineProperty(navigator,'brave',{configurable:true,enumerable:true," +
+    "value:Object.freeze({isBrave:function(){return Promise.resolve(true);}})});}}catch(e){}";
+  const inject = () => { try { wv.executeJavaScript(shim).catch(() => {}); } catch (e) {} };
+  wv.addEventListener('dom-ready', inject);
+}
 
 // ─── Predefined Messenger Registry ────────────────────────────────────────
 const MESSENGER_REGISTRY = [
@@ -10,9 +24,31 @@ const MESSENGER_REGISTRY = [
   { key: 'whatsapp-biz', name: 'WhatsApp Business', url: 'https://web.whatsapp.com', icon: 'https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg', status: 'available' },
   { key: 'messenger', name: 'Messenger', url: 'https://www.messenger.com', icon: 'https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg', status: 'available' },
   { key: 'telegram', name: 'Telegram', url: 'https://web.telegram.org', icon: 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg', status: 'available' },
-  { key: 'instagram', name: 'Instagram DM', url: 'https://www.instagram.com/direct/inbox/', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg', status: 'coming-soon' },
-  { key: 'discord', name: 'Discord', url: 'https://discord.com/app', icon: 'https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a69f118df70ad7828d4_icon_clyde_blurple_RGB.svg', status: 'coming-soon' },
+  { key: 'instagram', name: 'Instagram DM', url: 'https://www.instagram.com/direct/inbox/', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg', status: 'available' },
+  { key: 'discord', name: 'Discord', url: 'https://discord.com/app', icon: 'https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a69f118df70ad7828d4_icon_clyde_blurple_RGB.svg', status: 'available', comingSoon: true },
 ];
+
+// Find the registry entry a stored app corresponds to (by hostname).
+function registryForUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return MESSENGER_REGISTRY.find(m => {
+      try { return host === new URL(m.url).hostname; } catch { return false; }
+    }) || null;
+  } catch { return null; }
+}
+
+// Normalise a stored app: guarantee `enabled`, and keep `comingSoon` in sync with
+// the registry so a service that graduates from "Coming Soon" (e.g. Instagram)
+// stops rendering the placeholder for users who added it earlier.
+function normalizeApp(a) {
+  const reg = registryForUrl(a.url);
+  return {
+    ...a,
+    enabled: a.enabled !== false,
+    comingSoon: reg ? !!reg.comingSoon : !!a.comingSoon,
+  };
+}
 
 // ─── State ─────────────────────────────────────────────────────────────────
 let myApps = [];
@@ -49,10 +85,10 @@ async function init() {
       myApps = [{ id: 'wa_1', name: 'WhatsApp', url: 'https://web.whatsapp.com', part: 'persist:wa1', enabled: true }];
     }
     // Ensure all apps have 'enabled' field
-    myApps = myApps.map(a => ({ ...a, enabled: a.enabled !== false }));
+    myApps = myApps.map(normalizeApp);
     await window.api.setApps(myApps);
   } else {
-    myApps = apps.map(a => ({ ...a, enabled: a.enabled !== false }));
+    myApps = apps.map(normalizeApp);
   }
 
   // Load bookmarks
@@ -218,19 +254,73 @@ function getAppIcon(url) {
   } catch { return null; }
 }
 
+function buildComingSoonPlaceholder(app) {
+  const placeholder = document.createElement('div');
+  placeholder.id = `view-${app.id}`;
+  placeholder.className = 'coming-soon-panel';
+  placeholder.style.display = 'none';
+  const iconUrl = getAppIcon(app.url);
+  placeholder.innerHTML = `
+    <div class="coming-soon-content">
+      <div class="coming-soon-glow"></div>
+      ${iconUrl ? `<div class="coming-soon-icon"><img src="${iconUrl}" alt="${app.name}"></div>` : ''}
+      <h2 class="coming-soon-title">${app.name}</h2>
+      <div class="coming-soon-badge">Coming Soon</div>
+      <p class="coming-soon-desc">This integration is currently under development.<br>Full support will be available in a future update.</p>
+      <div class="coming-soon-features">
+        <div class="coming-soon-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Real-time messaging</span>
+        </div>
+        <div class="coming-soon-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Notification badges</span>
+        </div>
+        <div class="coming-soon-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Session persistence</span>
+        </div>
+      </div>
+    </div>
+  `;
+  return placeholder;
+}
+
+function buildMessengerWebview(app) {
+  const wv = document.createElement('webview');
+  wv.id = `view-${app.id}`;
+  wv.src = app.url;
+  wv.setAttribute('partition', app.part);
+  wv.setAttribute('allowpopups', '');
+  // A consistent Brave/Chrome UA on every service — Instagram in particular
+  // serves a broken, self-reloading login page to the default Electron UA.
+  wv.setAttribute('useragent', BRAVE_UA);
+  wv.style.display = 'none';
+  applyBraveEnv(wv);
+  return wv;
+}
+
 function renderMessengers() {
   const list = document.getElementById('messengerList');
   const panel = document.getElementById('messengerPanel');
-
-  list.innerHTML = '';
-
-  // Remove old webviews (keep empty state)
   const emptyState = document.getElementById('messengerEmpty');
-  panel.innerHTML = '';
-  panel.appendChild(emptyState);
+
+  // Sidebar rail is cheap to rebuild; panel views are NOT (rebuilding reloads
+  // every webview, which is what made Instagram's QR/login re-render in a loop).
+  list.innerHTML = '';
 
   const enabledApps = myApps.filter(a => a.enabled);
   emptyState.style.display = enabledApps.length === 0 ? 'flex' : 'none';
+
+  // Drop panel views whose app was removed or disabled.
+  const liveIds = new Set(enabledApps.map(a => a.id));
+  panel.querySelectorAll('[id^="view-"]').forEach(el => {
+    const id = el.id.slice('view-'.length);
+    if (!liveIds.has(id)) {
+      if (el.tagName === 'WEBVIEW') { try { el.src = 'about:blank'; } catch (e) {} }
+      el.remove();
+    }
+  });
 
   myApps.forEach(app => {
     if (!app.enabled) return;
@@ -272,14 +362,17 @@ function renderMessengers() {
     item.appendChild(del);
     list.appendChild(item);
 
-    // Webview
-    const wv = document.createElement('webview');
-    wv.id = `view-${app.id}`;
-    wv.src = app.url;
-    wv.setAttribute('partition', app.part);
-    wv.style.display = 'none';
-    if (app.url.includes('whatsapp')) wv.setAttribute('useragent', UA);
-    panel.appendChild(wv);
+    // Panel view: create once, then reuse across re-renders so the webview
+    // (and any pending login/QR state) is never torn down and reloaded.
+    const existing = document.getElementById(`view-${app.id}`);
+    const wantWebview = !app.comingSoon;
+    const haveWebview = existing && existing.tagName === 'WEBVIEW';
+    if (!existing || wantWebview !== haveWebview) {
+      if (existing) existing.remove();
+      panel.appendChild(app.comingSoon
+        ? buildComingSoonPlaceholder(app)
+        : buildMessengerWebview(app));
+    }
   });
 
   // Activate first app
@@ -306,8 +399,8 @@ function switchApp(id) {
   document.getElementById('settingsPanel').classList.remove('active');
   document.getElementById('accountsPanel').classList.remove('active');
 
-  // Show webview
-  document.querySelectorAll('#messengerPanel webview').forEach(v => v.style.display = 'none');
+  // Hide every panel view (webviews AND Coming Soon placeholders), show the one
+  document.querySelectorAll('#messengerPanel [id^="view-"]').forEach(v => v.style.display = 'none');
   const target = document.getElementById(`view-${id}`);
   if (target) target.style.display = 'flex';
 
@@ -382,20 +475,21 @@ function openAddModal() {
 
   MESSENGER_REGISTRY.forEach(m => {
     const item = document.createElement('div');
-    item.className = 'messenger-quick-item' + (m.status === 'coming-soon' ? ' disabled' : '');
+    item.className = 'messenger-quick-item';
+
+    const badgeHtml = m.comingSoon
+      ? ' <span style="font-size:10px;color:var(--warning);font-weight:400;">Coming Soon</span>'
+      : '';
 
     item.innerHTML = `
       <img src="${m.icon}" alt="${m.name}">
       <div class="mq-info">
-        <div class="mq-name">${m.name}${m.status === 'coming-soon' ? ' <span style="font-size:10px;color:var(--warning);font-weight:400;">Coming Soon</span>' : ''}</div>
+        <div class="mq-name">${m.name}${badgeHtml}</div>
         <div class="mq-url">${m.url}</div>
       </div>
     `;
 
-    if (m.status !== 'coming-soon') {
-      item.onclick = () => addFromRegistry(m);
-    }
-
+    item.onclick = () => addFromRegistry(m);
     list.appendChild(item);
   });
 
@@ -416,6 +510,7 @@ async function addFromRegistry(m) {
     url: m.url,
     part: `persist:${id}`,
     enabled: true,
+    comingSoon: m.comingSoon || false,
   };
   myApps.push(newApp);
   await window.api.setApps(myApps);
@@ -423,7 +518,7 @@ async function addFromRegistry(m) {
   renderAccounts();
   closeAddModal();
   switchApp(id);
-  showToast(`${m.name} added`, 'success');
+  showToast(`${m.name} added${m.comingSoon ? ' (Coming Soon)' : ''}`, 'success');
 }
 
 async function saveCustomApp() {
@@ -853,14 +948,19 @@ function createBrowserWebview(tabId, url) {
   wrapper.id = `browser-content-${tabId}`;
   wrapper.style.display = 'flex';
   wrapper.style.flex = '1';
+  wrapper.style.minWidth = '0';
+  wrapper.style.minHeight = '0';
   wrapper.style.position = 'relative';
 
   const wv = document.createElement('webview');
   wv.src = url;
   wv.setAttribute('partition', 'persist:browser');
+  wv.setAttribute('allowpopups', '');
+  wv.setAttribute('useragent', BRAVE_UA);
   wv.style.width = '100%';
   wv.style.height = '100%';
   wv.id = `browser-wv-${tabId}`;
+  applyBraveEnv(wv);
 
   wv.addEventListener('did-navigate', (e) => {
     const tab = browserTabs.find(t => t.id === tabId);

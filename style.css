@@ -51,7 +51,8 @@
   --shadow-xl:      0 16px 48px rgba(0,0,0,0.6);
 
   /* Layout */
-  --sidebar-width:     72px;
+  --sidebar-width:     68px;
+  --sidebar-bg:        #09090e;
   --titlebar-height:   38px;
   --radius-sm:     6px;
   --radius-md:     10px;
@@ -79,6 +80,7 @@ html[data-theme="light"] {
   --bg-elevated:    #ffffff;
   --bg-hover:       #eaeaef;
   --bg-active:      #dddde5;
+  --sidebar-bg:     #e2e2e9;
 
   --surface-card:       rgba(255, 255, 255, 0.90);
   --surface-modal:      rgba(255, 255, 255, 0.97);
@@ -341,18 +343,21 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SIDEBAR
+   SIDEBAR (App Service Rail)
    ═══════════════════════════════════════════════════════════════════════════ */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--bg-primary);
-  border-right: 1px solid var(--border-subtle);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-default);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 12px 0;
   flex-shrink: 0;
-  z-index: 100;
+  z-index: 200;
+  box-sizing: border-box;
+  user-select: none;
   transition: background var(--transition-normal);
 }
 
@@ -360,9 +365,10 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .sidebar-section.messenger-list {
@@ -375,26 +381,27 @@ html, body {
 .sidebar-section.messenger-list::-webkit-scrollbar { width: 3px; }
 
 .sidebar-divider {
-  width: 32px;
+  width: 28px;
   height: 1px;
   background: var(--border-default);
-  margin: 8px 0;
+  margin: 6px 0;
   flex-shrink: 0;
 }
 
 /* Sidebar Nav Item */
 .sidebar-item {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
+  margin: 0 auto;
   cursor: pointer;
 }
 
 .sidebar-item-btn {
   width: 100%;
   height: 100%;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   border: none;
   background: var(--surface-glass);
   color: var(--text-secondary);
@@ -405,13 +412,14 @@ html, body {
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .sidebar-item-btn::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   opacity: 0;
   background: linear-gradient(135deg, var(--accent-muted), transparent);
   transition: opacity var(--transition-normal);
@@ -427,7 +435,7 @@ html, body {
 .sidebar-item-btn.active {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .sidebar-item-btn.active::before { opacity: 0; }
@@ -436,14 +444,14 @@ html, body {
   width: 24px;
   height: 24px;
   object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
   position: relative;
   z-index: 1;
 }
 
 .sidebar-item-btn svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   position: relative;
   z-index: 1;
 }
@@ -455,25 +463,25 @@ html, body {
   z-index: 1;
 }
 
-/* Active indicator bar */
+/* Active indicator bar (attached cleanly to left edge of rail item) */
 .sidebar-item-btn.active::after {
   content: '';
   position: absolute;
-  left: -12px;
+  left: -10px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
+  width: 4px;
+  height: 22px;
   background: var(--accent);
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 4px 4px 0;
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
-/* Badge */
+/* Badge (contained within sidebar item boundaries) */
 .sidebar-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -3px;
+  right: -3px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -599,11 +607,13 @@ html, body {
    ═══════════════════════════════════════════════════════════════════════════ */
 .content-area {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-base);
   position: relative;
+  border-left: 1px solid var(--border-default);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -611,8 +621,14 @@ html, body {
    ═══════════════════════════════════════════════════════════════════════════ */
 .messenger-panel {
   flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: none;
   position: relative;
+  overflow: hidden;
+  background: var(--bg-base);
 }
 
 .messenger-panel.active { display: flex; }
@@ -622,6 +638,10 @@ html, body {
   height: 100%;
   border: none;
   outline: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
 }
 
 /* Empty state */
@@ -816,14 +836,32 @@ html, body {
 /* Browser content */
 .browser-content {
   flex: 1;
+  min-height: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+/* Each tab pane (new-tab page or webview wrapper) fills the content area.
+   Without an explicit flex context here the panes collapse to zero height and
+   only the solid background shows — hiding the actual page. */
+.browser-content > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .browser-content webview {
   width: 100%;
   height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   border: none;
   outline: none;
+  background: #ffffff;
 }
 
 /* New Tab Page */
@@ -1646,4 +1684,127 @@ html, body {
   background: linear-gradient(90deg, var(--accent), var(--accent-hover));
   border-radius: var(--radius-full);
   transition: width 0.2s linear;
+}
+
+/* ─── Coming Soon Panel ──────────────────────────────────────────────────── */
+.coming-soon-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.coming-soon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 32px;
+  max-width: 440px;
+  position: relative;
+  z-index: 1;
+}
+
+.coming-soon-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  opacity: 0.4;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: comingSoonPulse 4s ease-in-out infinite;
+}
+
+@keyframes comingSoonPulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.coming-soon-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-lg);
+}
+
+.coming-soon-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.coming-soon-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+}
+
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: var(--radius-full, 999px);
+  background: linear-gradient(135deg, var(--accent-muted), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.coming-soon-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 28px 0;
+}
+
+.coming-soon-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 260px;
+}
+
+.coming-soon-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-subtle);
+}
+
+.coming-soon-feature svg {
+  width: 18px;
+  height: 18px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.coming-soon-feature span {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
