@@ -138,6 +138,24 @@ async function cmdEval(expr) {
   await withRenderer(async (ev) => console.log(JSON.stringify(await ev(expr))));
 }
 
+// eval-wv <url-substring> <js>  — evaluate JS inside a matching <webview> target
+async function cmdEvalWv(raw) {
+  const sp = raw.indexOf(' ');
+  if (sp < 0) throw new Error('usage: eval-wv <url-substring> "<js>"');
+  const match = raw.slice(0, sp), expr = raw.slice(sp + 1);
+  const { targets } = await mainTarget();
+  const t = targets.find((x) => x.type === 'webview' && x.url.includes(match));
+  if (!t) throw new Error(`no webview target matching "${match}" - try: targets`);
+  const ws = new WebSocket(t.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { ws.addEventListener('open', res); ws.addEventListener('error', () => rej(new Error('cannot open CDP socket'))); });
+  let id = 0; const pending = new Map();
+  ws.addEventListener('message', (ev) => { const m = JSON.parse(ev.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+  const call = (method, params = {}) => new Promise((r) => { const n = ++id; pending.set(n, r); ws.send(JSON.stringify({ id: n, method, params })); });
+  const res = await call('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
+  ws.close();
+  console.log(JSON.stringify(res.result?.result?.value ?? res.result?.exceptionDetails?.exception?.description ?? null));
+}
+
 async function cmdPanel(name) {
   if (!name) throw new Error('usage: panel <messenger|browser|settings|accounts>');
   await withRenderer(async (ev) => { await ev(`switchPanel(${JSON.stringify(name)})`); console.log('panel ->', name); });
@@ -191,7 +209,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const arg = rest.join(' ');
 const table = {
   launch: cmdLaunch, unlock: cmdUnlock, probe: cmdProbe, targets: cmdTargets,
-  eval: () => cmdEval(arg), panel: () => cmdPanel(arg), 'open-url': () => cmdOpenUrl(arg),
+  eval: () => cmdEval(arg), 'eval-wv': () => cmdEvalWv(arg), panel: () => cmdPanel(arg), 'open-url': () => cmdOpenUrl(arg),
   'show-app': () => cmdShowApp(arg), shot: () => cmdShot(arg), stop: cmdStop,
 };
 if (!table[cmd]) {

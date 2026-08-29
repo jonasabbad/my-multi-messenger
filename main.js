@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeTheme, shell, nativeImage, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeTheme, shell, nativeImage, session, webFrameMain } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 const Store = require('electron-store');
@@ -10,6 +10,72 @@ const Store = require('electron-store');
 // degraded, self-reloading page they hand to unknown user agents.
 const BRAVE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
 app.userAgentFallback = BRAVE_UA;
+
+// ─── Disable WebAuthn / passkeys ─────────────────────────────────────────────
+// Instagram's login (accounts.meta.com) auto-invokes navigator.credentials.get()
+// with a publicKey request, which makes Chromium pop the native Windows Security
+// "Choose a passkey" dialog on a loop. Electron has no API to turn WebAuthn off,
+// so we (1) kill the Chromium features that auto-start the flow, and (2) inject a
+// shim into every webview frame that neutralises publicKey credential calls and
+// hides passkey feature-detection, so Meta falls straight through to the
+// password form. See injectPasskeyBlocker() further down.
+app.commandLine.appendSwitch('disable-features', [
+  'WebAuthenticationConditionalUI',        // the "autofill from a passkey" prompt
+  'WebAuthenticationRemoteDesktopSupport',
+  'WebAuthenticationHybridLinking',        // "iPhone, iPad, or Android device"
+  'WebAuthenticationNewBleUx',
+].join(','));
+
+// Shim executed in every webview frame before the site's own auth code runs.
+// Rejecting with NotAllowedError is exactly what a user-cancelled passkey looks
+// like, so sites treat it as "declined" instead of retrying.
+const PASSKEY_BLOCKER_SRC = `(() => {
+  try {
+    var reject = function () {
+      return Promise.reject(new DOMException('Passkeys are disabled in this app.', 'NotAllowedError'));
+    };
+    var creds = navigator.credentials;
+    if (creds) {
+      var _get = creds.get ? creds.get.bind(creds) : null;
+      var _create = creds.create ? creds.create.bind(creds) : null;
+      creds.get = function (opts) {
+        if (opts && opts.publicKey) return reject();
+        return _get ? _get(opts) : reject();
+      };
+      creds.create = function (opts) {
+        if (opts && opts.publicKey) return reject();
+        return _create ? _create(opts) : reject();
+      };
+    }
+    // Make passkey feature-detection say "not supported" so the flow never starts.
+    // (Keep the object itself so sites that call PublicKeyCredential.isUVPAA()
+    // don't throw — just have every probe resolve false/reject.)
+    if (window.PublicKeyCredential) {
+      var no = function () { return Promise.resolve(false); };
+      try { window.PublicKeyCredential.isConditionalMediationAvailable = no; } catch (e) {}
+      try { window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = no; } catch (e) {}
+      try { window.PublicKeyCredential.getClientCapabilities = function () { return Promise.resolve({}); }; } catch (e) {}
+    }
+  } catch (e) {}
+})();`;
+
+function injectPasskeyBlocker(frame) {
+  if (!frame) return;
+  try { frame.executeJavaScript(PASSKEY_BLOCKER_SRC, true).catch(() => {}); } catch (e) {}
+}
+
+// Apply to every <webview> guest, in the main frame and any sub-frames
+// (Instagram loads accounts.meta.com in an iframe — that's where the call is).
+app.on('web-contents-created', (_e, contents) => {
+  if (contents.getType() !== 'webview') return;
+
+  contents.on('did-navigate', () => injectPasskeyBlocker(contents.mainFrame));
+  contents.on('dom-ready', () => injectPasskeyBlocker(contents.mainFrame));
+  contents.on('did-frame-navigate', (_evt, _url, _code, _status, isMainFrame, processId, routingId) => {
+    if (isMainFrame) return;
+    injectPasskeyBlocker(webFrameMain.fromId(processId, routingId));
+  });
+});
 
 // ─── Electron Store ────────────────────────────────────────────────────────────
 const store = new Store({

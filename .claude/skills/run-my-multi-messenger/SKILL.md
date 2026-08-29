@@ -56,6 +56,7 @@ you skipped `unlock` or the window lost focus.
 | `probe` | print app version, `navigator.userAgent`, `BRAVE_UA`, the `myApps` list, `<webview>` count, `#browserContent` computed `display` |
 | `targets` | list CDP targets — one `webview` row per live `<webview>` with its URL |
 | `eval "<js>"` | evaluate JS in the main renderer, print the JSON result |
+| `eval-wv <url-substr> "<js>"` | evaluate JS **inside a matching `<webview>`** (wrap `await` in `(async()=>{…})()`) |
 | `panel <messenger\|browser\|settings\|accounts>` | call `switchPanel(...)` |
 | `open-url <url>` | switch to the browser panel and load `<url>`; prints the webview's rendered size |
 | `show-app <index>` | switch the messenger panel to `myApps[<index>]` |
