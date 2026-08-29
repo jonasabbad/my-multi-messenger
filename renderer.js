@@ -18,6 +18,27 @@ function applyBraveEnv(wv) {
   wv.addEventListener('dom-ready', inject);
 }
 
+// ─── Support / Donate ──────────────────────────────────────────────────────
+// 👉 PUT YOUR PERSONAL PAYPAL LINK HERE. Must start with "https://".
+//    Examples:
+//      https://www.paypal.com/paypalme/YourName
+//      https://www.paypal.com/paypalme/YourName/5
+//      https://www.paypal.com/donate/?hosted_button_id=XXXXXXXXXXXXX
+const DONATE_URL = 'https://www.paypal.com/paypalme/YOUR_PAYPAL_USERNAME';
+
+// Opens the donation page in the user's DEFAULT SYSTEM BROWSER (never in-app):
+// renderer -> preload (window.api.openExternal) -> IPC -> main process
+// shell.openExternal(). The main handler also rejects non-http(s) URLs.
+function openDonateLink() {
+  const url = (DONATE_URL || '').trim();
+  if (!/^https:\/\//i.test(url) || url.includes('YOUR_PAYPAL_USERNAME')) {
+    showToast('No donation link configured yet.', 'info');
+    return;
+  }
+  window.api.openExternal(url);
+  showToast('Opening PayPal in your browser…', 'info');
+}
+
 // ─── Predefined Messenger Registry ────────────────────────────────────────
 const MESSENGER_REGISTRY = [
   { key: 'whatsapp', name: 'WhatsApp', url: 'https://web.whatsapp.com', icon: 'https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg', status: 'available' },

@@ -379,6 +379,7 @@
                                             <span>Platform</span>
                                         </div>
                                         <span id="aboutPlatform" style="font-size:13px;color:var(--text-secondary)">—</span>
+                                    </div>
                                 </div>
                                 <div class="settings-card" id="aboutUpdateCard" style="margin-top:12px;">
                                     <div class="settings-row">
@@ -400,6 +401,23 @@
                                         <div style="display:flex;gap:10px;margin-top:10px;" id="aboutUpdateActions"></div>
                                     </div>
                                 </div>
+
+                                <!-- Support / Donate -->
+                                <div class="settings-card" id="aboutSupportCard" style="margin-top:12px;">
+                                    <div class="settings-row">
+                                        <div class="settings-row-label">
+                                            <span>Support / Donate</span>
+                                            <small>Multi-Messenger Pro is free. If it helps you, consider supporting its development.</small>
+                                        </div>
+                                        <button class="settings-btn primary" id="btnDonate" onclick="openDonateLink()">
+                                            <span style="display:flex;align-items:center;gap:8px;">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                                Donate with PayPal
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div style="display:flex;gap:10px;margin-top:14px;">
                                     <button class="settings-btn danger" onclick="confirmResetSettings()">Reset All Settings</button>
                                 </div>

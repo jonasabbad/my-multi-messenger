@@ -332,8 +332,18 @@ ipcMain.handle('browser:addHistory', (_e, entry) => {
 });
 ipcMain.handle('browser:clearHistory', () => { store.set('history', []); return true; });
 
-// Shell
-ipcMain.handle('shell:openExternal', (_e, url) => shell.openExternal(url));
+// Shell — open a URL in the user's default browser. Only allow safe schemes so a
+// compromised/renderer-supplied string can't launch arbitrary local programs.
+ipcMain.handle('shell:openExternal', (_e, url) => {
+  try {
+    const { protocol } = new URL(String(url));
+    if (protocol === 'https:' || protocol === 'http:' || protocol === 'mailto:') {
+      return shell.openExternal(url);
+    }
+  } catch (_) { /* invalid URL */ }
+  console.warn('[shell:openExternal] blocked non-web URL:', url);
+  return Promise.resolve();
+});
 
 // App info
 ipcMain.handle('app:info', () => ({
